@@ -1,13 +1,29 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {RouteProp} from '@react-navigation/native';
+import DocumentPicker from 'react-native-document-picker';
 
 import {IAppState} from '~/store';
+import {getLocalDate, uuidV4} from '~/services/utils';
 import {getPeopleByIdxAction, PeopleActions, setSelectedPeopleAction} from '~/store/people';
 import {getGroupsByIdxAction, GroupsActions, setSelectedGroupAction} from '~/store/groups';
+import {
+  getMessagesByIdAction,
+  setCurrentUserAction,
+  resetMessagesAction,
+  sendMessageByIdAction,
+} from '~/store/messages';
 import {useCommonByAction} from '~/services/utils';
 import ChatView from './ChatView';
-import {IPeople, IGroup, ListType, RootStackNavigation, Screen, RootStackParamList} from '~/types';
+import {
+  IPeople,
+  IGroup,
+  ListType,
+  RootStackNavigation,
+  Screen,
+  RootStackParamList,
+  IMessage,
+} from '~/types';
 
 type Props = {
   navigation: RootStackNavigation;
@@ -18,25 +34,23 @@ const Chat = ({navigation, route}: Props) => {
   const dispatch = useDispatch();
 
   const {type, index, name} = route?.params || {};
-  const details: IPeople | IGroup | null = useSelector((state: IAppState) => {
-    switch (type) {
-      case ListType.People: {
-        return state.people?.selected || null;
-      }
-      case ListType.Groups: {
-        return state.groups?.selected || null;
-      }
-      default:
-        return null;
-    }
-  });
 
-  const {loading: isPeopleLoading, apiErrorMessage: errorGetPeople} = useCommonByAction(
-    PeopleActions.PEOPLE_GET_BY_IDX,
-  );
-  const {loading: isGroupsLoading, apiErrorMessage: errorGetGroup} = useCommonByAction(
-    GroupsActions.GROUPS_GET_BY_IDX,
-  );
+  const list: IMessage[] = useSelector((state: IAppState) => state.messages.list);
+
+  const [listChanges, setListChanges] = useState<number>(0);
+  const [uploadFiles, setUploadFiles] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    setListChanges(listChanges + 1);
+  }, [list]);
+
+  useEffect(() => {
+    dispatch(setCurrentUserAction({type, idx: index}));
+    dispatch(getMessagesByIdAction({type, idx: index}));
+    return () => {
+      dispatch(resetMessagesAction());
+    };
+  }, []);
 
   useEffect(() => {
     switch (type) {
@@ -63,8 +77,36 @@ const Chat = ({navigation, route}: Props) => {
     };
   }, [type, index]);
 
-  const onSendMessage = (msg: string) => {
-    console.log('onSendMessage', msg);
+  const sendMessage = (message: string) => {
+    if (message.toString()) {
+      const id = uuidV4();
+      const time = getLocalDate();
+      const data = {id, message, time, userIdx: 0, userType: ListType.Me};
+      dispatch(sendMessageByIdAction(data));
+    }
+    if (uploadFiles) {
+      // dispatch(sendFilesByIdAction(uploadFiles)); // todo , with remove from state when uploaded
+    }
+  };
+
+  const onAvatarPress = () => {
+    navigation.navigate(Screen.Details, {type, index, name});
+  };
+
+  const onUploadButtonPress = async () => {
+    try {
+      const results = await DocumentPicker.pickMultiple({
+        type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
+      });
+      const newUploadFiles = [...uploadFiles, ...results];
+      setUploadFiles(newUploadFiles);
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        // User cancelled the picker, exit any dialogs or menus and move on
+      } else {
+        throw err;
+      }
+    }
   };
 
   const onBackPress = () => {
@@ -74,11 +116,14 @@ const Chat = ({navigation, route}: Props) => {
   return (
     <ChatView
       type={type}
-      data={details}
+      data={list}
       name={name}
-
-      onSendMessage={onSendMessage}
+      sendMessage={sendMessage}
+      onAvatarPress={onAvatarPress}
       onBackPress={onBackPress}
+      onUploadButtonPress={onUploadButtonPress}
+      hasFiles={!!uploadFiles.length}
+      listChanges={listChanges}
     />
   );
 };

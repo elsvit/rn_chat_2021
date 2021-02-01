@@ -32,7 +32,7 @@ const StyledButton = styled(TouchableOpacity)`
   border-radius: 10px;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding-horizontal: 6px;
   border-width: 1px;
   margin-left: 8px;
 `;

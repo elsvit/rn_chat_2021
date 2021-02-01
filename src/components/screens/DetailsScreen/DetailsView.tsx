@@ -48,7 +48,7 @@ const DetailsView = ({
     );
   }
   const {name, url, idx, created, edited, ...rest} = data;
-  const title = `${name || propName || 'Unknown'} (${type})`.substr(0, 40);
+  const title = `${name || propName || 'Unknown'} (Details)`.substr(0, 40);
 
   const renderItem = (key: string) => {
     // @ts-ignore

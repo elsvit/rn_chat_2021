@@ -37,7 +37,7 @@ const SafeScrollView = ({
   );
 };
 
-const WrapperScrollable = styled(KeyboardAwareScrollView)`
+export const WrapperScrollable = styled(KeyboardAwareScrollView)`
   flex: 1;
 `;
 

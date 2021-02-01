@@ -22,7 +22,7 @@ export function SvgButton({
   style,
   onPress,
 }: ISvgButtonProps) {
-  console.log('SvgButton26', !!SvgIcon, '/', !!onPress, width, color);
+
   const wrapperStyle = {
     flex: 1,
     height: width,

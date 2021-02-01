@@ -32,12 +32,12 @@ export interface IMessageSendByIdAction {
 
 export interface IMessagesGetByIdAction {
   type: typeof MessagesActions.MESSAGES_GET_BY_ID;
-  payload: IMessage[];
+  payload: ITypeIdx;
 }
 
 export interface ISetCurrentMessagesAction {
   type: typeof MessagesActions.SET_CURRENT_MESSAGES;
-  payload: IMessage[] | null;
+  payload: IMessage[];
 }
 
 export interface IAddCurrentMessagesAction {
@@ -67,14 +67,12 @@ export const sendMessageByIdAction = (payload: IMessage): IMessageSendByIdAction
   payload,
 });
 
-export const getMessagesByIdAction = (payload: IMessage[]): IMessagesGetByIdAction => ({
+export const getMessagesByIdAction = (payload: ITypeIdx): IMessagesGetByIdAction => ({
   type: MessagesActions.MESSAGES_GET_BY_ID,
   payload,
 });
 
-export const setCurrentMessagesAction = (
-  payload: IMessage[] | null,
-): ISetCurrentMessagesAction => ({
+export const setCurrentMessagesAction = (payload: IMessage[]): ISetCurrentMessagesAction => ({
   type: MessagesActions.SET_CURRENT_MESSAGES,
   payload,
 });
@@ -119,14 +117,15 @@ const reducer: Reducer<MessagesStateT> = (
     case MessagesActions.SET_CURRENT_MESSAGES: {
       return {
         ...state,
-        list: action.payload || [],
+        list: state.list.length ? [...state.list] : [...action.payload], // todo change
       };
     }
 
+    case MessagesActions.MESSAGE_SEND_BY_ID:
     case MessagesActions.ADD_CURRENT_MESSAGES: {
       return {
         ...state,
-        list: [...state.list, action.payload],
+        list: [action.payload, ...state.list],
       };
     }
 
@@ -145,7 +144,7 @@ function* sagaGetMessagesById({payload}: IMessagesGetByIdAction) {
   try {
     yield put(setLoading({actionType}));
     // const res: IResponse<IMessage[]> = yield swapi.messagesApi.getMessages(payload); // todo
-    const res = STUB_MESSAGES; // stub
+    const res = STUB_MESSAGES.reverse(); // stub
     if (res) {
       yield put(setCurrentMessagesAction(res));
     }

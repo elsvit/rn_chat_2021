@@ -27,7 +27,7 @@ const MainView = ({
 }: IMainViewProps) => {
   const renderItem = ({item, section: {type}}: {item: INameIdx; section: {type: ListType}}) => {
     const handleItemPress = () => onItemPress(type, item.idx, item.name);
-    const hanvleChatPress = () => onChatPress(type, item.idx, item.name);
+    const handleChatPress = () => onChatPress(type, item.idx, item.name);
 
     return (
       <ItemWrapper>
@@ -36,7 +36,7 @@ const MainView = ({
             {item.name}
           </Typography>
         </TextWrapper>
-        <ItemButton label={'Chat'} onPress={hanvleChatPress} />
+        <ItemButton label={'Chat'} onPress={handleChatPress} />
       </ItemWrapper>
     );
   };
@@ -59,8 +59,6 @@ const MainView = ({
       </ItemWrapper>
     );
   };
-
-  console.log('list', list);
 
   return (
     <SafeAreaBackground>

@@ -1,139 +1,115 @@
 import * as React from 'react';
-import {View, Text} from 'react-native';
+import {SectionList, FlatList, View, ViewStyle, ListRenderItem} from 'react-native';
 import styled from 'styled-components';
+import moment from 'moment';
 
-import {COLOR, FONT} from '~/constants/styles';
-import {Typography, ItemButton} from '~/components/ui';
-import {SafeScrollView} from '~/components/blocks';
-import {onLinkPress} from '~/services/utils';
-import {ListType, IPeople, IGroup} from '~/types';
+import {COLOR, FONT, SIZE} from '~/constants/styles';
+import {Typography} from '~/components/ui';
 import {UserIcon} from '~/assets/icons';
+import {SafeAreaBackground, ScreenHeader} from '~/components/blocks';
+import {IMessage, ListType} from '~/types';
+import BottomInput from './BottomInput';
 
-type DataType = IPeople | IGroup;
+const renderItem: ListRenderItem<IMessage> = ({item: {id, message, time, userType}}) => {
+  const isMy = userType === ListType.Me;
+  const formattedDate = moment(time).format('YY.MM.DD HH:mm');
+  return (
+    <ItemWrapper isMy={isMy} key={id}>
+      <MessageContainer isMy={isMy}>
+        <Typography fontSize={FONT.SIZE.fs10} color={COLOR.darkGrey}>
+          {formattedDate}
+        </Typography>
+        <Typography fontSize={FONT.SIZE.fs16} color={COLOR.black}>
+          {message}
+        </Typography>
+      </MessageContainer>
+    </ItemWrapper>
+  );
+};
 
 interface IMainViewProps {
-  type: ListType;
-  data?: DataType | null;
   name: string;
+  data: IMessage[];
+  type: ListType;
   avatarSrc?: string | undefined;
-  onSendMessage: (msg: string) => void;
+  onAvatarPress: () => void;
   onBackPress: () => void;
+  sendMessage: (val: string) => void;
+  onUploadButtonPress: () => void;
+  hasFiles: boolean;
+  listChanges: number;
 }
 
-const ChatView = ({type, data, name: propName, avatarSrc, onBackPress}: IMainViewProps) => {
-  if (data == null) {
-    return (
-      <SafeScrollView
-        bgColor="transparent"
-        screenHeaderProps={{
-          title: propName || '',
-          color: COLOR.black,
-          onLeftPress: onBackPress,
-          leftColor: COLOR.darkGrey,
-        }}>
-        <Wrapper>
-          <Typography>Unknown </Typography>
-        </Wrapper>
-      </SafeScrollView>
-    );
-  }
-  const {name, url, idx, created, edited, ...rest} = data;
-  const title = `${name || propName || 'Unknown'} (${type})`.substr(0, 40);
-
-  const renderItem = (key: string) => {
-    // @ts-ignore
-    const value: string | string[] = data[key];
-    const renderVal = (val: string) => {
-      if (val.trim().substr(0, 4).toLowerCase() === 'http') {
-        return (
-          <ItemButtonWrapper>
-            <ItemButton
-              label={'web'}
-              onPress={() => onLinkPress(val)}
-              bgColor={COLOR.lavenderBlue}
-              style={{marginLeft: 8}}
-            />
-          </ItemButtonWrapper>
-        );
-      }
-      return (
-        <Typography fontSize={FONT.SIZE.fs15} color={COLOR.darkGrey}>
-          {val}
-        </Typography>
-      );
-    };
-
-    const renderArrayItems = (value: string[]) => value.map((val: string) => renderVal(val));
-
-    const Label = Array.isArray(value) ? renderArrayItems(value) : renderVal(value);
-
-    return (
-      <ItemWrapper>
-        <LabelWrapper>
-          <Typography fontSize={FONT.SIZE.fs16} color={COLOR.lavenderBlue}>
-            {key}
-          </Typography>
-        </LabelWrapper>
-        <ValueWrapper>{Label}</ValueWrapper>
-      </ItemWrapper>
-    );
-  };
+const ChatView = ({
+  data,
+  name: propName,
+  avatarSrc,
+  onBackPress,
+  sendMessage,
+  onUploadButtonPress,
+  hasFiles,
+  listChanges,
+}: IMainViewProps) => {
+  const title = `${propName || 'Unknown'} (Chat)`.substr(0, 40);
 
   return (
-    <SafeScrollView
-      bgColor="transparent"
-      screenHeaderProps={{
-        title,
-        color: COLOR.black,
-        onLeftPress: onBackPress,
-        leftColor: COLOR.darkGrey,
-        RightSvgIcon: UserIcon,
-        rightImageSrc: avatarSrc,
-        rightColor: COLOR.darkGrey,
-      }}>
+    <SafeAreaBackground>
+      <ScreenHeader
+        title={title}
+        color={COLOR.black}
+        onLeftPress={onBackPress}
+        leftColor={COLOR.darkGrey}
+        RightSvgIcon={UserIcon}
+        rightImageSrc={avatarSrc}
+        rightColor={COLOR.darkGrey}
+      />
+
       <Wrapper>
-        <Text>TESXT</Text>
+        <FlatList
+          key={listChanges}
+          data={data}
+          extraData={data}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          inverted
+          // onEndReached={(distanceFromEnd) => {})
+          initialNumToRender={100}
+        />
       </Wrapper>
-    </SafeScrollView>
+
+      <BottomInput submit={sendMessage} onUploadPress={onUploadButtonPress} hasFiles={hasFiles} />
+    </SafeAreaBackground>
   );
 };
 
 const Wrapper = styled(View)`
   flex: 1;
-  min-height: 300px;
-  width: 100%;
-  padding: 16px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  padding: 0 16px;
+  padding-bottom: ${SIZE.inputHeight + 32};
 `;
 
-const ItemWrapper = styled(View)`
+const ItemWrapper = styled(View)<ViewStyle & {isMy?: boolean}>`
   flex: 1;
   flex-direction: row;
+  width: 100%;
   overflow: hidden;
   padding-horizontal: 8px;
-  padding-vertical: 4px;
+  padding-top: 4px;
   align-items: center;
+  justify-content: ${({isMy}) => (isMy ? 'flex-end' : 'flex-start')};
 `;
 
-const LabelWrapper = styled(View)`
-  width: 40%;
-  padding-right: 4px;
-  margin-right: 4px;
-  justify-content: flex-end;
-  align-items: flex-end;
+const MessageContainer = styled(View)<ViewStyle & {isMy: boolean}>`
+  overflow: hidden;
+  padding: 4px 8px 8px;
+  margin-vertical: 4px;
+  max-width: 77%;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: ${({isMy}) => (isMy ? '16px' : '0')};
+  border-bottom-right-radius: ${({isMy}) => (isMy ? '0' : '16px')};
+  background-color: ${COLOR.whiteTwo};
+  border-color: ${COLOR.silver};
+  border-width: 1px;
 `;
-
-const ValueWrapper = styled(View)`
-  width: 60%;
-  padding-left: 4px;
-  margin-left: 4px;
-  flex-direction: row;
-`;
-
-const ItemButtonWrapper = styled(View)`
-  margin: 4px;
-`;
-
 export default ChatView;
